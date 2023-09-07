@@ -3,7 +3,6 @@ import { apiBackend } from "./api/axios";
 import { ICliente, IMovimentacoes } from "./types/App";
 
 export const App = () => {
-  const [clientes, setClientes] = useState<ICliente[]>([]);
   const [movimentacoes, setMovimentacoes] = useState<IMovimentacoes[][]>([]);
 
   useEffect(() => {
@@ -16,7 +15,7 @@ export const App = () => {
         const clientesPorNome: { [key: string]: IMovimentacoes[][] } = {};
 
         // Iterar pelos clientes e seus contêineres
-        clientesData.forEach((cliente) => {
+        clientesData.forEach((cliente: ICliente) => {
           const nomeCliente = cliente.name;
 
           // Inicializar um array vazio para o cliente, se ainda não existir
@@ -88,6 +87,8 @@ export const App = () => {
             })}
           </tbody>
         </table>
+
+        
       </div>
     </div>
   );
