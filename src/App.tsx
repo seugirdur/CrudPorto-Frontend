@@ -1,94 +1,109 @@
 import { useEffect, useState } from "react";
 import { apiBackend } from "./api/axios";
-import { ICliente, IMovimentacoes } from "./types/App";
+import { ICliente, INewCliente } from "./types/App";
 
 export const App = () => {
-  const [movimentacoes, setMovimentacoes] = useState<IMovimentacoes[][]>([]);
+  const [clientes, setClientes] = useState<INewCliente[]>();
 
   useEffect(() => {
-    const fetchApi = async () => {
+    const fetchData = async () => {
       try {
         const response = await apiBackend.get("/clientes");
-        const clientesData = response.data.content;
+        const clientesData: ICliente[] = response.data.content;
 
-        // Criar um objeto para mapear os clientes por nome
-        const clientesPorNome: { [key: string]: IMovimentacoes[][] } = {};
+        const resultadoAgrupadoArray = clientesData.map((cliente) => {
+          const movimentacoes = cliente.containers.flatMap((container) =>
+            container.movimentacoes.map((movimentacao) => {
+              const newContainer = {
+                numContainer: container.numContainer,
+                tipo: container.tipo,
+                categoria: container.categoria,
+                status: container.status,
+                uuid: container.uuid,
+                updatedAt: container.updatedAt,
+                createdAt: container.createdAt,
+              };
+              return {
+                tipo: movimentacao.tipo,
+                container: newContainer,
+              };
+            })
+          );
 
-        // Iterar pelos clientes e seus contêineres
-        clientesData.forEach((cliente: ICliente) => {
-          const nomeCliente = cliente.name;
-
-          // Inicializar um array vazio para o cliente, se ainda não existir
-          if (!clientesPorNome[nomeCliente]) {
-            clientesPorNome[nomeCliente] = [];
-          }
-
-          // Iterar pelos contêineres do cliente
-          cliente.containers.forEach((container) => {
-            const tipoMovimentacao = container.categoria;
-
-            // Inicializar um array vazio para o tipo de movimentação, se ainda não existir
-            if (!clientesPorNome[nomeCliente][tipoMovimentacao]) {
-              clientesPorNome[nomeCliente][tipoMovimentacao] = [];
-            }
-
-            // Adicionar o contêiner ao array correspondente ao tipo de movimentação
-            clientesPorNome[nomeCliente][tipoMovimentacao].push({
-              conteiner: container,
-            });
-          });
+          return {
+            Cliente: cliente.name,
+            Movimentacoes: movimentacoes.reduce((acc, movimentacao) => {
+              const existingMovimentacao = acc.find(
+                (mov) => mov.Tipo === movimentacao.tipo
+              );
+              if (existingMovimentacao) {
+                if (!existingMovimentacao.Conteineres.some((c) => c.uuid === movimentacao.container.uuid)) {
+                  existingMovimentacao.Conteineres.push(movimentacao.container);
+                }
+              } else {
+                acc.push({
+                  Tipo: movimentacao.tipo,
+                  Conteineres: [movimentacao.container],
+                });
+              }
+              return acc;
+            }, []),
+          };
         });
 
-        // Agora temos os clientes organizados por nome e os contêineres agrupados por tipo de movimentação
-        console.log(clientesPorNome);
-
-        // Defina o estado com os dados organizados
-        setMovimentacoes(clientesPorNome);
+        setClientes(resultadoAgrupadoArray);
+        console.log(resultadoAgrupadoArray);
       } catch (error) {
         console.error("Erro ao buscar dados da API:", error);
       }
     };
 
-    fetchApi();
+    fetchData();
   }, []);
 
   return (
     <div className="container mx-auto p-8">
-      <div className="overflow-x-auto">
-        <table className="min-w-full">
-          <thead>
-            <tr>
-              <th className="px-4 py-2">ID de Cliente</th>
-              <th className="px-4 py-2">Nome do Cliente</th>
-              <th className="px-4 py-2">Categoria de Conteiner</th>
-              <th className="px-4 py-2">Contêineres</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.keys(movimentacoes || {}).map((clienteNome) => {
-              return Object.keys(movimentacoes[clienteNome] || {}).map((tipoMovimentacao) => {
-                return movimentacoes[clienteNome][tipoMovimentacao].map((container, index) => (
-                  <tr key={clienteNome + tipoMovimentacao + index}>
-                    {index === 0 && (
-                      <>
-                        <td className="border px-4 py-2" rowSpan={movimentacoes[clienteNome][tipoMovimentacao].length}>
-                          {clienteNome}
-                        </td>
-                        <td className="border px-4 py-2" rowSpan={movimentacoes[clienteNome][tipoMovimentacao].length}>
-                          {clienteNome}
-                        </td>
-                      </>
-                    )}
-                    <td className="border px-4 py-2">{tipoMovimentacao}</td>
-                    <td className="border px-4 py-2">{container.conteiner.numContainer}</td>
-                  </tr>
-                ));
-              });
-            })}
-          </tbody>
-        </table>
+      <div className="w-full">
+        {clientes?.map((cliente, index) => {
+          let totalImportacoes = 0;
+          let totalExportacoes = 0;
 
-        
+          cliente.Movimentacoes.forEach((movimentacao) => {
+            const importacoes = movimentacao.Conteineres.filter(
+              (conteiner) => conteiner.categoria === "IMPORTACAO"
+            ).length;
+            const exportacoes = movimentacao.Conteineres.filter(
+              (conteiner) => conteiner.categoria === "EXPORTACAO"
+            ).length;
+
+            totalImportacoes += importacoes;
+            totalExportacoes += exportacoes;
+          });
+
+          return (
+            <div key={index} className="border border-black p-2 mb-4">
+              <div className="font-bold">Cliente: {cliente.Cliente}</div>
+              <div className="mb-2">
+                <strong>Movimentações:</strong>
+              </div>
+              {cliente.Movimentacoes.map((movimentacao, indexMov) => (
+                <div key={indexMov} className="mb-2">
+                  <div className="font-bold">Tipo: {movimentacao.Tipo}</div>
+                  <div>
+                    <strong>Total de Contêineres Movimentados:</strong>{" "}
+                    {movimentacao.Conteineres.length}
+                  </div>
+                </div>
+              ))}
+              <div>
+                <strong>Total de Importações:</strong> {totalImportacoes}
+              </div>
+              <div>
+                <strong>Total de Exportações:</strong> {totalExportacoes}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
