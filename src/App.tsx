@@ -1,15 +1,39 @@
 import { useEffect, useState } from "react";
 import { apiBackend } from "./api/axios";
-import { ICliente, INewCliente } from "./types/App";
+import { ICliente, IContainer, IMovimentacoes, INewCliente } from "./types/App";
+import { ClienteCrud } from "./components/ClienteCrud";
+import { ContainerCrud } from "./components/ContainerCrud";
+import { MovimentacoesCrud } from "./components/MovimentacoesCrud";
 
 export const App = () => {
   const [clientes, setClientes] = useState<INewCliente[]>();
+
+  const [clientesComp, setClientesComp] = useState<ICliente[]>([]);
+  const [containers, setContainers] = useState<IContainer[]>([]);
+  const [movimentacoes, setMovimentacoes] = useState<IMovimentacoes[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await apiBackend.get("/clientes");
         const clientesData: ICliente[] = response.data.content;
+        setClientesComp(clientesData);
+
+        apiBackend.get('/containers')
+        .then((response) => {
+          setContainers(response.data.content);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+        apiBackend.get('/movimentacoes')
+        .then((response) => {
+          setMovimentacoes(response.data.content);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
 
         const resultadoAgrupadoArray = clientesData.map((cliente) => {
           const movimentacoes = cliente.containers.flatMap((container) =>
@@ -59,7 +83,7 @@ export const App = () => {
     };
 
     fetchData();
-  }, []);
+  }, [setMovimentacoes]);
 
   return (
     <div className="container mx-auto p-8">
@@ -105,6 +129,11 @@ export const App = () => {
           );
         })}
       </div>
+      <ClienteCrud clientes={clientesComp} setClientes={setClientesComp} />
+
+      <ContainerCrud containers={containers} setContainers={setContainers} clientes={clientesComp}/>
+
+      <MovimentacoesCrud clientes={clientesComp} containers={containers} movimentacoes={movimentacoes} setMovimentacoes={setMovimentacoes} />
     </div>
   );
 };

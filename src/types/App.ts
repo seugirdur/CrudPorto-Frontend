@@ -46,8 +46,8 @@ export interface INewContainer {
     updatedAt: string,
 }
 
-type TipoMovimentacao = "EMBARQUE" | "DESCARGA" | "SCANNER" | "REPOSICIONAMENTO" | "PESAGEM" | "GATE_IN" | "GATE_OUT";
+export type TipoMovimentacao = "EMBARQUE" | "DESCARGA" | "SCANNER" | "REPOSICIONAMENTO" | "PESAGEM" | "GATE_IN" | "GATE_OUT";
 
-type TipoContainer = "TIPO_40" | "TIPO_20"
-type StatusContainer = "CHEIO" | "VAZIO"
-type CategoriaContainer = "EXPORTACAO" | "IMPORTACAO"
+export type TipoContainer = "TIPO_40" | "TIPO_20"
+export type StatusContainer = "CHEIO" | "VAZIO"
+export type CategoriaContainer = "EXPORTACAO" | "IMPORTACAO"
